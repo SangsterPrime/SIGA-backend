@@ -100,16 +100,16 @@ garantiza la FK `ON DELETE CASCADE` en la base de datos. Esto evita problemas de
 
 ## 6. Variables de entorno
 
-| Variable | Default | Descripción |
+| Variable | Valor recomendado | Descripción |
 |---|---|---|
-| `SIGA_DB_URL` | *(default: URL de Neon)* | URL JDBC; override solo si cambias de BD |
-| `SIGA_DB_USER` | *(default: `neondb_owner`)* | Usuario de la BD |
+| `SIGA_DB_URL` | *(requerida en Render)* | URL JDBC de Neon o PostgreSQL local |
+| `SIGA_DB_USER` | *(requerida en Render)* | Usuario de la BD |
 | `SIGA_DB_PASSWORD` | **REQUERIDA (único secreto)** | Contraseña de Neon — siempre por env var |
 | `SPRING_PROFILES_ACTIVE` | *(vacío)* | Usar `google` en Render para habilitar OAuth2 Google |
 | `GOOGLE_CLIENT_ID` | *(sin default)* | Client ID de Google OAuth2 |
 | `GOOGLE_CLIENT_SECRET` | *(sin default)* | Client Secret de Google OAuth2 — siempre por env var |
-| `SIGA_CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Orígenes CORS permitidos |
-| `SIGA_FRONTEND_REDIRECT_URI` | `http://localhost:5173` | Redirección post-login |
+| `SIGA_CORS_ORIGINS` | `http://localhost:5173` | Orígenes CORS permitidos |
+| `SIGA_FRONTEND_REDIRECT_URI` | `http://localhost:5173/inicio` | Redirección post-login |
 
 **Conexión Neon Postgres (proyecto del curso):**
 - **Project:** sigma-db · **Branch:** production · **Database:** neondb · **Role/User:** neondb_owner
@@ -141,15 +141,15 @@ garantiza la FK `ON DELETE CASCADE` en la base de datos. Esto evita problemas de
    - **Base de datos: Neon Postgres** (serverless). `SIGA_DB_URL` incluye `?sslmode=require`,
      dialecto `PostgreSQLDialect` explícito, `show-sql=true` y pool Hikari pequeño
      (`maximum-pool-size=5`, `connection-timeout=30000`, `idle-timeout=10000`,
-      `max-lifetime=30000`). `SIGA_DB_URL` y `SIGA_DB_USER` tienen default de Neon;
-      `SIGA_DB_PASSWORD` es obligatorio y sin esa variable la app no arranca.
+      `max-lifetime=1800000`). `SIGA_DB_URL`, `SIGA_DB_USER` y `SIGA_DB_PASSWORD`
+      son obligatorios en Render para evitar valores pegados o ambiguos en `.properties`.
 5. **Sin colecciones `@OneToMany`** (ver sección 4).
 6. **Timestamps con `@CreationTimestamp` / `@UpdateTimestamp`** (Hibernate) en lugar de
    depender de los `DEFAULT now()` de la BD.
 7. **Seguridad:** endpoints públicos vs protegidos separados; entry point devuelve `401`
     (API, sin redirección automática); login se inicia en `/oauth2/authorization/google`.
    - El perfil `google` lee `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` desde variables
-     de entorno. El callback queda explícito como `{baseUrl}/login/oauth2/code/{registrationId}`.
+     de entorno. Spring usa el callback estándar `{baseUrl}/login/oauth2/code/{registrationId}`.
    - En Render se usa `server.forward-headers-strategy=framework` para respetar
      `X-Forwarded-Proto`/`X-Forwarded-Host` y generar redirect URIs HTTPS correctas detrás
      del proxy de Render.
@@ -251,10 +251,10 @@ en el dashboard de Render (declaradas como `sync: false` en `render.yaml`).
 
 | Variable | Valor |
 |---|---|
-| `SIGA_DB_PASSWORD` | *(contraseña de Neon — **único requerido**, secreto)* |
-| `SIGA_DB_URL` *(opcional)* | ya tiene default = URL de Neon; definir solo si cambias de BD |
-| `SIGA_DB_USER` *(opcional)* | default `neondb_owner` |
-| `SIGA_CORS_ORIGINS` | `https://siga-fronted.vercel.app,http://localhost:5173,http://localhost:3000` |
+| `SIGA_DB_URL` | URL JDBC de Neon (`jdbc:postgresql://.../neondb?sslmode=require`) |
+| `SIGA_DB_USER` | usuario de Neon, por ejemplo `neondb_owner` |
+| `SIGA_DB_PASSWORD` | contraseña de Neon (**secreto**, no versionar) |
+| `SIGA_CORS_ORIGINS` | `https://siga-fronted.vercel.app,http://localhost:5173` |
 | `SPRING_PROFILES_ACTIVE` | `google` |
 | `GOOGLE_CLIENT_ID` | Client ID público de Google OAuth2 |
 | `GOOGLE_CLIENT_SECRET` | Client Secret de Google OAuth2 (**secreto**, no versionar) |
@@ -263,7 +263,7 @@ en el dashboard de Render (declaradas como `sync: false` en `render.yaml`).
 **Configuración actual Vercel + Render:**
 - Frontend: `https://siga-fronted.vercel.app`
 - Backend: `https://siga-backend-cs0t.onrender.com`
-- `SIGA_CORS_ORIGINS=https://siga-fronted.vercel.app,http://localhost:5173,http://localhost:3000`
+- `SIGA_CORS_ORIGINS=https://siga-fronted.vercel.app,http://localhost:5173`
 - `SIGA_FRONTEND_REDIRECT_URI=https://siga-fronted.vercel.app/inicio`
 - La cookie de sesión se envía como `SameSite=None; Secure; HttpOnly` para permitir
   requests cross-site con `credentials: "include"`.
@@ -271,7 +271,7 @@ en el dashboard de Render (declaradas como `sync: false` en `render.yaml`).
 **Pasos:**
 1. Subir el repo a GitHub.
 2. Render → **New → Blueprint** (usa `render.yaml`) **o** New → Web Service → Docker.
-3. Cargar las variables de entorno de arriba (`SIGA_DB_PASSWORD` como secreto).
+3. Cargar las variables de entorno de arriba (`SIGA_DB_PASSWORD` y `GOOGLE_CLIENT_SECRET` como secretos).
 4. Health check path: `/api/public/health`.
 
 > **Troubleshooting:** si el log de Render muestra

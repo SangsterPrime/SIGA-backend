@@ -14,15 +14,16 @@ services:
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/public/health
     envVars:
-      # ÚNICO secreto requerido: la contraseña de Neon. Cárgala en el dashboard de Render.
+      # Neon Postgres: URL y password se cargan en Render, sin secretos en el repo.
+      - key: SIGA_DB_URL
+        sync: false
+      - key: SIGA_DB_USER
+        value: neondb_owner
       - key: SIGA_DB_PASSWORD
         sync: false
-      # Opcionales de BD (ya tienen valor por defecto en application.properties):
-      #   SIGA_DB_URL  -> URL de Neon
-      #   SIGA_DB_USER -> neondb_owner
       # --- Frontend Vercel + CORS con credenciales ---
       - key: SIGA_CORS_ORIGINS
-        value: https://siga-fronted.vercel.app,http://localhost:5173,http://localhost:3000
+        value: https://siga-fronted.vercel.app,http://localhost:5173
       # --- Login con Google: perfil + credenciales por variables de entorno ---
       - key: SPRING_PROFILES_ACTIVE
         value: google
