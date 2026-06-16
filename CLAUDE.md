@@ -1,7 +1,7 @@
 # CLAUDE.md — Memoria técnica del proyecto SIGA Backend
 
 > Documento vivo. Se actualiza cada vez que se completa una parte importante.
-> Última actualización: 2026-06-15.
+> Última actualización: 2026-06-16.
 
 ## 1. Objetivo del proyecto
 
@@ -44,7 +44,8 @@ src/main/java/cl/duoc/siga/backend/
 └── service/       UsuarioService, TramiteService, DocumentoService, VehiculoService,
                    DeclaracionSagService, RevisionPdiService
 src/main/resources/
-├── application.properties          (config por variables de entorno)
+├── application.properties          (config base por variables de entorno)
+├── application-google.properties   (perfil google: OAuth2/OIDC por env vars)
 └── db/migration/V1__init_schema.sql (esquema inicial Flyway)
 src/test/resources/
 └── application.properties          (perfil de test con H2)
@@ -104,8 +105,9 @@ garantiza la FK `ON DELETE CASCADE` en la base de datos. Esto evita problemas de
 | `SIGA_DB_URL` | *(default: URL de Neon)* | URL JDBC; override solo si cambias de BD |
 | `SIGA_DB_USER` | *(default: `neondb_owner`)* | Usuario de la BD |
 | `SIGA_DB_PASSWORD` | **REQUERIDA (único secreto)** | Contraseña de Neon — siempre por env var |
-| `GOOGLE_CLIENT_ID` | *(vacío)* | Client ID de Google OAuth2 |
-| `GOOGLE_CLIENT_SECRET` | *(vacío)* | Client Secret de Google OAuth2 |
+| `SPRING_PROFILES_ACTIVE` | *(vacío)* | Usar `google` en Render para habilitar OAuth2 Google |
+| `GOOGLE_CLIENT_ID` | *(sin default)* | Client ID de Google OAuth2 |
+| `GOOGLE_CLIENT_SECRET` | *(sin default)* | Client Secret de Google OAuth2 — siempre por env var |
 | `SIGA_CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Orígenes CORS permitidos |
 | `SIGA_FRONTEND_REDIRECT_URI` | `http://localhost:5173` | Redirección post-login |
 
@@ -139,15 +141,20 @@ garantiza la FK `ON DELETE CASCADE` en la base de datos. Esto evita problemas de
    - **Base de datos: Neon Postgres** (serverless). `SIGA_DB_URL` incluye `?sslmode=require`,
      dialecto `PostgreSQLDialect` explícito, `show-sql=true` y pool Hikari pequeño
      (`maximum-pool-size=5`, `connection-timeout=30000`, `idle-timeout=10000`,
-     `max-lifetime=30000`). Las variables `SIGA_DB_*` son **obligatorias** (sin valor por
-     defecto): si faltan, la app no arranca.
+      `max-lifetime=30000`). `SIGA_DB_URL` y `SIGA_DB_USER` tienen default de Neon;
+      `SIGA_DB_PASSWORD` es obligatorio y sin esa variable la app no arranca.
 5. **Sin colecciones `@OneToMany`** (ver sección 4).
 6. **Timestamps con `@CreationTimestamp` / `@UpdateTimestamp`** (Hibernate) en lugar de
    depender de los `DEFAULT now()` de la BD.
 7. **Seguridad:** endpoints públicos vs protegidos separados; entry point devuelve `401`
-   (API, sin redirección automática); login se inicia en `/oauth2/authorization/google`.
+    (API, sin redirección automática); login se inicia en `/oauth2/authorization/google`.
+   - El perfil `google` lee `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` desde variables
+     de entorno. El callback queda explícito como `{baseUrl}/login/oauth2/code/{registrationId}`.
+   - En Render se usa `server.forward-headers-strategy=framework` para respetar
+     `X-Forwarded-Proto`/`X-Forwarded-Host` y generar redirect URIs HTTPS correctas detrás
+     del proxy de Render.
 8. **CSRF deshabilitado** para simplificar el consumo REST desde React/curl en el MVP
-   (en producción se habilitaría con tokens).
+    (en producción se habilitaría con tokens).
 9. **DTOs como `record`** y mappers estáticos (sin MapStruct) para mantener el código
    simple y sin dependencias extra.
 
@@ -161,8 +168,13 @@ garantiza la FK `ON DELETE CASCADE` en la base de datos. Esto evita problemas de
 - [ ] Tests de integración por endpoint (más allá de `contextLoads`).
 - [ ] Datos semilla (seed) para el demo.
 
-## 9. Estado de verificación (2026-06-15)
+## 9. Estado de verificación (2026-06-16)
 
+- ✅ `./mvnw clean test` — **BUILD SUCCESS** (1/1, contexto Spring completo carga sobre H2)
+  después de configurar OAuth2 Google para Render (`server.forward-headers-strategy=framework`
+  y callback explícito `{baseUrl}/login/oauth2/code/{registrationId}`).
+- ✅ `SPRING_PROFILES_ACTIVE=google ./mvnw test` con `GOOGLE_CLIENT_SECRET` dummy —
+  **BUILD SUCCESS**; confirma que el perfil `google` carga la registración OAuth2 desde env vars.
 - ✅ `./mvnw clean compile` — compila sin errores.
 - ✅ `./mvnw clean test` — **BUILD SUCCESS** (1/1, contexto Spring completo carga sobre H2;
   valida las 10 entidades, mappings, seguridad y CORS).
@@ -212,6 +224,7 @@ $env:SIGA_DB_PASSWORD="<TU_PASSWORD_DE_NEON>"
 # 4) Con login de Google (perfil "google" + credenciales):
 $env:GOOGLE_CLIENT_ID="xxxx.apps.googleusercontent.com"
 $env:GOOGLE_CLIENT_SECRET="xxxx"
+$env:PORT="8081"
 .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=google
 ```
 
@@ -226,7 +239,7 @@ en el dashboard de Render (declaradas como `sync: false` en `render.yaml`).
 **Archivos:**
 - `Dockerfile` — multi-stage: build con Maven/JDK 21 → runtime con JRE 21 (usuario no-root).
 - `.dockerignore` — excluye `target/`, secretos locales, etc.
-- `render.yaml` — Blueprint con las env vars (sin valores).
+- `render.yaml` — Blueprint con las env vars; los secretos quedan como `sync: false`.
 - `server.port=${PORT:8080}` en `application.properties` — la app escucha el puerto que
   Render inyecta en `PORT` (local = 8080).
 
@@ -238,6 +251,10 @@ en el dashboard de Render (declaradas como `sync: false` en `render.yaml`).
 | `SIGA_DB_URL` *(opcional)* | ya tiene default = URL de Neon; definir solo si cambias de BD |
 | `SIGA_DB_USER` *(opcional)* | default `neondb_owner` |
 | `SIGA_CORS_ORIGINS` *(opcional)* | URL del frontend desplegado |
+| `SPRING_PROFILES_ACTIVE` | `google` |
+| `GOOGLE_CLIENT_ID` | Client ID público de Google OAuth2 |
+| `GOOGLE_CLIENT_SECRET` | Client Secret de Google OAuth2 (**secreto**, no versionar) |
+| `SIGA_FRONTEND_REDIRECT_URI` | Mientras no exista frontend: `https://TU-BACKEND.onrender.com/api/me` |
 
 **Pasos:**
 1. Subir el repo a GitHub.
@@ -247,8 +264,9 @@ en el dashboard de Render (declaradas como `sync: false` en `render.yaml`).
 
 > **Troubleshooting:** si el log de Render muestra
 > `Driver ... claims to not accept jdbcUrl, ${SIGA_DB_URL}` o `No open ports detected`,
-> significa que **faltan las variables de entorno** (las 3 `SIGA_DB_*`) en Render → Environment.
-> Cárgalas y haz *Manual Deploy*. El puerto lo gestiona Render vía `PORT` (la app ya lo lee
+> revisa que `SIGA_DB_PASSWORD` esté cargada y que no hayas sobreescrito `SIGA_DB_URL` con un
+> placeholder. Corrige las variables en Render → Environment y haz *Manual Deploy*.
+> El puerto lo gestiona Render vía `PORT` (la app ya lo lee
 > con `server.port=${PORT:8080}`); no hay que configurarlo a mano.
 
 **Build local de la imagen (cuando tengas Docker instalado):**
@@ -261,11 +279,18 @@ docker run -p 8080:8080 -e PORT=8080 \
   siga-backend
 ```
 
-**Probar (con el backend en http://localhost:8080):**
-- Públicos: `curl http://localhost:8080/api/public/health`
-- Login Google: abrir en navegador `http://localhost:8080/oauth2/authorization/google`
+**Probar local (con el backend en http://localhost:8081 si usas OAuth local):**
+- Públicos: `curl http://localhost:8081/api/public/health`
+- Login Google: abrir en navegador `http://localhost:8081/oauth2/authorization/google`
   (tras autenticar, redirige al frontend; la sesión queda en la cookie `JSESSIONID`).
 - `GET /api/me` y los CRUD requieren esa sesión (usar el navegador o pasar la cookie a curl).
 
 **Configurar Google OAuth2:** en Google Cloud Console crear credenciales OAuth 2.0 con
-URI de redirección autorizado: `http://localhost:8080/login/oauth2/code/google`.
+estos redirect URIs autorizados:
+- Producción Render: `https://TU-BACKEND.onrender.com/login/oauth2/code/google`
+- Local 8081: `http://localhost:8081/login/oauth2/code/google`
+
+**Probar OAuth2 en Render:** abrir `https://TU-BACKEND.onrender.com/oauth2/authorization/google`.
+Si funciona, Google autentica, vuelve a `/login/oauth2/code/google`, Spring crea/recupera el
+`Usuario` por correo en la tabla `usuario` y redirige a `SIGA_FRONTEND_REDIRECT_URI`; mientras
+no exista frontend, esa URI puede ser `/api/me` para ver el usuario autenticado en el navegador.

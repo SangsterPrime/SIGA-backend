@@ -21,10 +21,14 @@ services:
       #   SIGA_DB_URL        -> URL de Neon
       #   SIGA_DB_USER       -> neondb_owner
       #   SIGA_CORS_ORIGINS  -> origen del frontend (cuando lo tengas)
-      # --- (Opcional) Login con Google: activar perfil + credenciales ---
-      # - key: SPRING_PROFILES_ACTIVE
-      #   value: google
-      # - key: GOOGLE_CLIENT_ID
-      #   sync: false
-      # - key: GOOGLE_CLIENT_SECRET
-      #   sync: false
+      # --- Login con Google: perfil + credenciales por variables de entorno ---
+      - key: SPRING_PROFILES_ACTIVE
+        value: google
+      - key: GOOGLE_CLIENT_ID
+        value: 994222033064-uqblt3m8cdj9j8paert3v20gamaergjm.apps.googleusercontent.com
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # Mientras no exista frontend, redirige post-login al endpoint autenticado /api/me.
+      # En Render reemplazar TU-BACKEND por el host real del servicio.
+      - key: SIGA_FRONTEND_REDIRECT_URI
+        sync: false
