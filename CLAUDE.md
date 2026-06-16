@@ -153,6 +153,10 @@ garantiza la FK `ON DELETE CASCADE` en la base de datos. Esto evita problemas de
    - En Render se usa `server.forward-headers-strategy=framework` para respetar
      `X-Forwarded-Proto`/`X-Forwarded-Host` y generar redirect URIs HTTPS correctas detrás
      del proxy de Render.
+   - Para login cross-site desde Vercel hacia Render, la sesión `JSESSIONID` se configura
+     con `SameSite=None`, `Secure=true` y `HttpOnly=true`. Esto permite que el frontend
+     `https://siga-fronted.vercel.app` consuma `/api/me` usando `credentials: "include"`
+     después del login Google.
 8. **CSRF deshabilitado** para simplificar el consumo REST desde React/curl en el MVP
     (en producción se habilitaría con tokens).
 9. **DTOs como `record`** y mappers estáticos (sin MapStruct) para mantener el código
@@ -250,11 +254,19 @@ en el dashboard de Render (declaradas como `sync: false` en `render.yaml`).
 | `SIGA_DB_PASSWORD` | *(contraseña de Neon — **único requerido**, secreto)* |
 | `SIGA_DB_URL` *(opcional)* | ya tiene default = URL de Neon; definir solo si cambias de BD |
 | `SIGA_DB_USER` *(opcional)* | default `neondb_owner` |
-| `SIGA_CORS_ORIGINS` *(opcional)* | URL del frontend desplegado |
+| `SIGA_CORS_ORIGINS` | `https://siga-fronted.vercel.app,http://localhost:5173,http://localhost:3000` |
 | `SPRING_PROFILES_ACTIVE` | `google` |
 | `GOOGLE_CLIENT_ID` | Client ID público de Google OAuth2 |
 | `GOOGLE_CLIENT_SECRET` | Client Secret de Google OAuth2 (**secreto**, no versionar) |
-| `SIGA_FRONTEND_REDIRECT_URI` | Mientras no exista frontend: `https://TU-BACKEND.onrender.com/api/me` |
+| `SIGA_FRONTEND_REDIRECT_URI` | `https://siga-fronted.vercel.app/inicio` |
+
+**Configuración actual Vercel + Render:**
+- Frontend: `https://siga-fronted.vercel.app`
+- Backend: `https://siga-backend-cs0t.onrender.com`
+- `SIGA_CORS_ORIGINS=https://siga-fronted.vercel.app,http://localhost:5173,http://localhost:3000`
+- `SIGA_FRONTEND_REDIRECT_URI=https://siga-fronted.vercel.app/inicio`
+- La cookie de sesión se envía como `SameSite=None; Secure; HttpOnly` para permitir
+  requests cross-site con `credentials: "include"`.
 
 **Pasos:**
 1. Subir el repo a GitHub.
@@ -287,10 +299,12 @@ docker run -p 8080:8080 -e PORT=8080 \
 
 **Configurar Google OAuth2:** en Google Cloud Console crear credenciales OAuth 2.0 con
 estos redirect URIs autorizados:
-- Producción Render: `https://TU-BACKEND.onrender.com/login/oauth2/code/google`
+- Producción Render: `https://siga-backend-cs0t.onrender.com/login/oauth2/code/google`
 - Local 8081: `http://localhost:8081/login/oauth2/code/google`
 
-**Probar OAuth2 en Render:** abrir `https://TU-BACKEND.onrender.com/oauth2/authorization/google`.
-Si funciona, Google autentica, vuelve a `/login/oauth2/code/google`, Spring crea/recupera el
-`Usuario` por correo en la tabla `usuario` y redirige a `SIGA_FRONTEND_REDIRECT_URI`; mientras
-no exista frontend, esa URI puede ser `/api/me` para ver el usuario autenticado en el navegador.
+**Probar OAuth2 en Render + Vercel:** abrir `https://siga-fronted.vercel.app/ingresar`, iniciar
+login con Google, volver a `https://siga-fronted.vercel.app/inicio` y verificar que el frontend
+haga `GET https://siga-backend-cs0t.onrender.com/api/me` con `credentials: "include"` y reciba
+`200` con el usuario autenticado. Si se prueba directo en backend, abrir
+`https://siga-backend-cs0t.onrender.com/oauth2/authorization/google`; Spring crea/recupera el
+`Usuario` por correo en la tabla `usuario` y redirige a `SIGA_FRONTEND_REDIRECT_URI`.
