@@ -1,0 +1,33 @@
+# =====================================================================
+# Render Blueprint para SIGA Backend (Docker + Neon Postgres).
+# Crea el servicio con: Render Dashboard -> New -> Blueprint (apunta a este repo).
+#
+# IMPORTANTE: las variables con `sync: false` NO se guardan en el repo;
+# Render las pide en el dashboard. Así las credenciales de Neon nunca
+# quedan versionadas ni expuestas.
+# =====================================================================
+services:
+  - type: web
+    name: siga-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/public/health
+    envVars:
+      # --- Conexión a Neon (se cargan en el dashboard de Render) ---
+      - key: SIGA_DB_URL
+        sync: false   # jdbc:postgresql://<host>.neon.tech/neondb?sslmode=require
+      - key: SIGA_DB_USER
+        sync: false   # neondb_owner
+      - key: SIGA_DB_PASSWORD
+        sync: false   # contraseña de Neon (secreto)
+      # --- CORS: origen(es) del frontend desplegado ---
+      - key: SIGA_CORS_ORIGINS
+        sync: false   # p.ej. https://siga-frontend.onrender.com
+      # --- (Opcional) Login con Google: activar perfil + credenciales ---
+      # - key: SPRING_PROFILES_ACTIVE
+      #   value: google
+      # - key: GOOGLE_CLIENT_ID
+      #   sync: false
+      # - key: GOOGLE_CLIENT_SECRET
+      #   sync: false

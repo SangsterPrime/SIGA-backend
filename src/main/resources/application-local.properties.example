@@ -1,0 +1,21 @@
+# =====================================================================
+# Plantilla de configuración LOCAL con secretos.
+#
+# Uso:
+#   1. Copia este archivo como  application-local.properties  (queda gitignored).
+#   2. Reemplaza CAMBIA_ESTO por tu contraseña real de PostgreSQL.
+#   3. Arranca con el perfil "local":
+#        .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local
+#
+# El archivo application-local.properties NO se versiona (ver .gitignore),
+# así la contraseña nunca queda en el repositorio ni en el chat.
+# =====================================================================
+# --- Opción A: PostgreSQL local ---
+#spring.datasource.url=jdbc:postgresql://localhost:5432/siga_db
+#spring.datasource.username=postgres
+#spring.datasource.password=CAMBIA_ESTO
+
+# --- Opción B: Neon (recordar sslmode=require) ---
+spring.datasource.url=jdbc:postgresql://<host>.neon.tech/<db>?sslmode=require
+spring.datasource.username=CAMBIA_ESTO
+spring.datasource.password=CAMBIA_ESTO

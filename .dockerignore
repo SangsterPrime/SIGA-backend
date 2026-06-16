@@ -1,0 +1,17 @@
+# Reduce el contexto de build y evita filtrar artefactos/secretos locales.
+target/
+.git/
+.gitignore
+.gitattributes
+.idea/
+*.iml
+.vscode/
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+*.log
+
+# Nunca enviar configuración local con secretos a la imagen.
+application-local.properties
+src/main/resources/application-local.properties
+.env
+.env.local
