@@ -14,16 +14,13 @@ services:
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/public/health
     envVars:
-      # --- Conexión a Neon (se cargan en el dashboard de Render) ---
-      - key: SIGA_DB_URL
-        sync: false   # jdbc:postgresql://<host>.neon.tech/neondb?sslmode=require
-      - key: SIGA_DB_USER
-        sync: false   # neondb_owner
+      # ÚNICO secreto requerido: la contraseña de Neon. Cárgala en el dashboard de Render.
       - key: SIGA_DB_PASSWORD
-        sync: false   # contraseña de Neon (secreto)
-      # --- CORS: origen(es) del frontend desplegado ---
-      - key: SIGA_CORS_ORIGINS
-        sync: false   # p.ej. https://siga-frontend.onrender.com
+        sync: false
+      # Opcionales (ya tienen valor por defecto en application.properties):
+      #   SIGA_DB_URL        -> URL de Neon
+      #   SIGA_DB_USER       -> neondb_owner
+      #   SIGA_CORS_ORIGINS  -> origen del frontend (cuando lo tengas)
       # --- (Opcional) Login con Google: activar perfil + credenciales ---
       # - key: SPRING_PROFILES_ACTIVE
       #   value: google

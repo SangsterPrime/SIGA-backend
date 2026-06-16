@@ -101,9 +101,9 @@ garantiza la FK `ON DELETE CASCADE` en la base de datos. Esto evita problemas de
 
 | Variable | Default | Descripción |
 |---|---|---|
-| `SIGA_DB_URL` | *(requerida, sin default)* | URL JDBC. Para **Neon** debe incluir `?sslmode=require` |
-| `SIGA_DB_USER` | *(requerida)* | Usuario de la BD (Neon) |
-| `SIGA_DB_PASSWORD` | *(requerida)* | Contraseña de la BD (Neon) |
+| `SIGA_DB_URL` | *(default: URL de Neon)* | URL JDBC; override solo si cambias de BD |
+| `SIGA_DB_USER` | *(default: `neondb_owner`)* | Usuario de la BD |
+| `SIGA_DB_PASSWORD` | **REQUERIDA (único secreto)** | Contraseña de Neon — siempre por env var |
 | `GOOGLE_CLIENT_ID` | *(vacío)* | Client ID de Google OAuth2 |
 | `GOOGLE_CLIENT_SECRET` | *(vacío)* | Client Secret de Google OAuth2 |
 | `SIGA_CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Orígenes CORS permitidos |
@@ -234,10 +234,10 @@ en el dashboard de Render (declaradas como `sync: false` en `render.yaml`).
 
 | Variable | Valor |
 |---|---|
-| `SIGA_DB_URL` | `jdbc:postgresql://ep-proud-credit-atxikxie-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require` |
-| `SIGA_DB_USER` | `neondb_owner` |
-| `SIGA_DB_PASSWORD` | *(contraseña de Neon — secreto, nunca en el repo)* |
-| `SIGA_CORS_ORIGINS` | URL del frontend desplegado |
+| `SIGA_DB_PASSWORD` | *(contraseña de Neon — **único requerido**, secreto)* |
+| `SIGA_DB_URL` *(opcional)* | ya tiene default = URL de Neon; definir solo si cambias de BD |
+| `SIGA_DB_USER` *(opcional)* | default `neondb_owner` |
+| `SIGA_CORS_ORIGINS` *(opcional)* | URL del frontend desplegado |
 
 **Pasos:**
 1. Subir el repo a GitHub.
