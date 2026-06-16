@@ -245,6 +245,12 @@ en el dashboard de Render (declaradas como `sync: false` en `render.yaml`).
 3. Cargar las variables de entorno de arriba (`SIGA_DB_PASSWORD` como secreto).
 4. Health check path: `/api/public/health`.
 
+> **Troubleshooting:** si el log de Render muestra
+> `Driver ... claims to not accept jdbcUrl, ${SIGA_DB_URL}` o `No open ports detected`,
+> significa que **faltan las variables de entorno** (las 3 `SIGA_DB_*`) en Render → Environment.
+> Cárgalas y haz *Manual Deploy*. El puerto lo gestiona Render vía `PORT` (la app ya lo lee
+> con `server.port=${PORT:8080}`); no hay que configurarlo a mano.
+
 **Build local de la imagen (cuando tengas Docker instalado):**
 ```bash
 docker build -t siga-backend .
