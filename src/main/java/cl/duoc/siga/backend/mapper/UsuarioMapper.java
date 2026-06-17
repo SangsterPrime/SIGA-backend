@@ -1,5 +1,6 @@
 package cl.duoc.siga.backend.mapper;
 
+import cl.duoc.siga.backend.dto.response.AuthUserResponse;
 import cl.duoc.siga.backend.dto.response.UsuarioResponse;
 import cl.duoc.siga.backend.model.Usuario;
 
@@ -20,5 +21,15 @@ public final class UsuarioMapper {
                 u.getEstadoCuenta(),
                 u.isDosFaHabilitado(),
                 u.getFechaCreacion());
+    }
+
+    /** Vista mínima para respuestas de auth (sin passwordHash). El rol es {@code tipoUsuario}. */
+    public static AuthUserResponse toAuthUser(Usuario u) {
+        return new AuthUserResponse(
+                u.getId(),
+                u.getNombre(),
+                u.getCorreo(),
+                u.getTipoUsuario(),
+                u.getProvider());
     }
 }

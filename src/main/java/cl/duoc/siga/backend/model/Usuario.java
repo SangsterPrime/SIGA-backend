@@ -1,5 +1,6 @@
 package cl.duoc.siga.backend.model;
 
+import cl.duoc.siga.backend.enums.AuthProvider;
 import cl.duoc.siga.backend.enums.EstadoCuenta;
 import cl.duoc.siga.backend.enums.RolFuncionario;
 import cl.duoc.siga.backend.enums.TipoUsuario;
@@ -40,6 +41,10 @@ public class Usuario {
 
     @Column(name = "password_hash", length = 255)
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider", nullable = false, length = 10)
+    private AuthProvider provider = AuthProvider.LOCAL;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_usuario", nullable = false, length = 20)

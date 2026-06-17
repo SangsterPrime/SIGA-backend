@@ -2,6 +2,7 @@ package cl.duoc.siga.backend.service;
 
 import cl.duoc.siga.backend.dto.request.UsuarioRequest;
 import cl.duoc.siga.backend.dto.response.UsuarioResponse;
+import cl.duoc.siga.backend.enums.AuthProvider;
 import cl.duoc.siga.backend.enums.EstadoCuenta;
 import cl.duoc.siga.backend.enums.TipoUsuario;
 import cl.duoc.siga.backend.exception.ConflictException;
@@ -89,6 +90,7 @@ public class UsuarioService {
             u.setCorreo(correo);
             u.setNombre(nombre != null && !nombre.isBlank() ? nombre : correo);
             u.setTipoUsuario(TipoUsuario.PASAJERO);
+            u.setProvider(AuthProvider.GOOGLE);
             u.setEstadoCuenta(EstadoCuenta.ACTIVA);
             return usuarioRepository.save(u);
         });

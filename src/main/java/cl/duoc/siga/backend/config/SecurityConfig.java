@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
@@ -52,6 +54,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/error", "/api/public/**",
+                                "/auth/**",
                                 "/oauth2/**", "/login/**",
                                 "/actuator/health", "/actuator/info").permitAll()
                         .anyRequest().authenticated())
@@ -66,5 +69,15 @@ public class SecurityConfig {
         }
 
         return http.build();
+    }
+
+    /**
+     * Codificador de contraseñas para el registro/login manual. BCrypt viene incluido en
+     * {@code spring-security-crypto} (sin dependencias extra). Los usuarios de Google no
+     * usan {@code passwordHash}; los manuales lo tienen obligatorio y hasheado.
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
